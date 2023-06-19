@@ -1,13 +1,16 @@
 import requests
+# import os
 #
-# api_key = 'QEj6o5nJJ0Lcfhb2vOzoa-9IVeu4jWob'  # Replace with your Tequila Kiwi API key
+# TEQUILA_API = os.environ["TEQUILA_API"]
+# TEQUILA_ENDPOINT = os.environ["TEQUILA_ENDPOINT"]
+# SHEETY_GET_ENDPOINT = os.environ["SHEETY_GET_ENDPOINT"]
 #
-# url = 'https://api.tequila.kiwi.com/locations/query'
+# url = TEQUILA_ENDPOINT
 # headers = {
-#     'apikey': api_key
+#     'apikey': TEQUILA_API
 # }
 #
-# sheety_get_endpoint = 'https://api.sheety.co/6c0887c27fe16c2892977f767bcbbd82/flightDeals/sheet1'
+# sheety_get_endpoint = SHEETY_GET_ENDPOINT
 #
 # sheety_get_response = requests.get(url=sheety_get_endpoint)
 #
