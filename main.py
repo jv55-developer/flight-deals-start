@@ -25,11 +25,11 @@ client = Client(account_sid, auth_token)
 current_datetime = datetime.now()
 sheety_get_endpoint = SHEETY_GET_ENDPOINT
 
-# Get IATA codes for Google sheet
+# Get data from Google Sheet
 sheety_get_response = requests.get(url=sheety_get_endpoint)
-
 sheety_get_data = sheety_get_response.json()['sheet1']
-#
+
+# Get IATA codes for Google sheet from Kiwi and populate Google Sheet
 # for location in sheety_get_data:
 #     row_city = location['city']
 #     row_id = location['id']
@@ -40,9 +40,15 @@ sheety_get_data = sheety_get_response.json()['sheet1']
 #     response = requests.get(url, headers=headers, params=params)
 #     iata_code = response.json()['locations'][0]['code']
 #
-#     print(iata_code)
+#     put_params = {
+#         'sheet1': {
+#             'iataCode': iata_code
+#         }
+#     }
+#     sheety_put_response = requests.put(url=f"{SHEETY_GET_ENDPOINT}/{row_id}", json=put_params)
 
-# Loop through all sheety items and run an api search for flight prices
+
+# Loop through all sheety items and run an api search for flight prices using city, iata code and price
 for location in sheety_get_data:
     iata = location['iataCode']
     price = location['lowestPrice']
