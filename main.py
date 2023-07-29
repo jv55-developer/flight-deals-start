@@ -1,79 +1,50 @@
-import requests
-import os
-from datetime import datetime, timedelta
-from twilio.rest import Client
 from data_manager import DataManager
+from flight_data import FlightData
+from flight_search import FlightSearch
+from notification_manager import NotificationManager
 
+# From data_manager Class
 data = DataManager()
 get_sheety_data = data.get_sheety_data()
 sheety_data = data.sheety_data
 
-TEQUILA_API = os.environ["TEQUILA_API"]
-TEQUILA_ENDPOINT = os.environ["TEQUILA_ENDPOINT"]
-TEQUILA_API_SEARCH = os.environ["TEQUILA_API_SEARCH"]
+# From flight_search Class
+flight_search = FlightSearch()
 
-url = TEQUILA_ENDPOINT
-url_2 = TEQUILA_API_SEARCH
-headers = {
-    'apikey': TEQUILA_API
-}
-
-# Twilio data
-account_sid = os.environ["TWILIO_SID"]
-auth_token = os.environ["TWILIO_AUTH_TOKEN"]
-from_number = os.environ["FROM_NUMBER"]
-to_number = os.environ["TO_NUMBER"]
-
-client = Client(account_sid, auth_token)
-current_datetime = datetime.now()
+# From notification_manager import Class
+notification_manager = NotificationManager()
 
 # Get IATA codes for Google sheet from Kiwi and populate Google Sheet
 for location in sheety_data:
     row_city = location['city']
     row_id = location['id']
-    params = {
-        'term': row_city,  # Replace with the location term you want to search for
-    }
 
-    response = requests.get(url, headers=headers, params=params)
-    iata_code = response.json()['locations'][0]['code']
+    # From flight_data Class
+    flight_data = FlightData(row_city=row_city)
 
-    put_params = {
-        'sheet1': {
-            'iataCode': iata_code
-        }
-    }
-    sheety_put_response = requests.put(url=f"{DataManager().sheety_get_endpoint}/{row_id}", json=put_params)
+    # Request to Tequila Kiwi API for iata codes of Airports
+    flight_data.get_kiwi_data()
+    iata_code = flight_data.iata_code
 
+    # Request to update Excel sheet iata column in Excel sheet
+    data.put_sheety_data(row_id=row_id, iata_code=iata_code)
 
 # Loop through all sheety items and run an api search for flight prices using city, iata code and price
-# for location in sheety_get_data:
-#     iata = location['iataCode']
-#     price = location['lowestPrice']
-#     city = location['city']
-#
-#     params = {
-#         'fly_from': 'LHR',
-#         'fly_to': iata,
-#         'date_from': current_datetime.strftime("%d/%m/%Y"),
-#         'date_to': (current_datetime + timedelta(days=15)).strftime("%d/%m/%Y")
-#     }
-#
-#     flight_search_response = requests.get(url=url_2, headers=headers, params=params)
-#     flight_search_data = flight_search_response.json()
-#
-#     if flight_search_data['data'][0]['price'] < price:
-#         print(f'price is lower for {city}')
-#         sms_message = f"Low price alert! Only {flight_search_data['data'][0]['price']} to fly from {city}-{iata} to " \
-#                       f"f{flight_search_data['data'][0]['cityFrom']}-f{flight_search_data['data'][0]['flyFrom']}, " \
-#                       f"from f{current_datetime.strftime('%d/%m/%Y')} " \
-#                       f"to f{(current_datetime + timedelta(days=15)).strftime('%d/%m/%Y')}"
-#         message = client.messages.create(
-#             from_=from_number,
-#             body=sms_message,
-#             to=to_number
-#         )
-#     else:
-#         print(f'No lower price found for {city}')
+for location in sheety_data:
+    iata_code = location['iataCode']
+    lowest_price = location['lowestPrice']
+    city = location['city']
 
-#This file will need to use the DataManager,FlightSearch, FlightData, NotificationManager classes to achieve the program requirements.
+    flight_search.get_flight_date(iata_code=iata_code)
+    flight_search_data = flight_search.flight_search_data
+    date_from = flight_search.date_from
+    date_to = flight_search.date_to
+    price = flight_search_data['data'][0]['price']
+    city_from = flight_search_data['data'][0]['cityFrom']
+    fly_from = flight_search_data['data'][0]['flyFrom']
+
+    if price < lowest_price:
+        print(f'price is lower for {city}')
+        notification_manager.send_sms(price, city, date_from, date_to, iata_code, city_from, fly_from)
+    else:
+        print(f'No lower price found for {city}')
